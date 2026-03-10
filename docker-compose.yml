@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # Kafka (required for Kafka protocol calls)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - orchestration-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_INTERNAL://kafka:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    networks:
+      - orchestration-network
+
+  # Mock Payment Service (HTTP)
+  payment-service:
+    image: mockoon/mockoon:latest
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./mock-services/payment-service.json:/data/mock-openapi.json
+    environment:
+      MOCKOON_DATA: /data/mock-openapi.json
+    networks:
+      - orchestration-network
+
+  # Aerospike (required for distributed state store)
+  aerospike:
+    image: aerospike/aerospike-server:latest
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+      - "3002:3002"
+    volumes:
+      - aerospike_data:/opt/aerospike/data
+    environment:
+      NAMESPACE: test
+    networks:
+      - orchestration-network
+
+volumes:
+  aerospike_data:
+
+networks:
+  orchestration-network:
+    driver: bridge

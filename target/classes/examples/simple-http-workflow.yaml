@@ -1,0 +1,45 @@
+name: Simple HTTP Workflow
+serviceTimeout: 30000
+globalErrorHandler: null
+initialContext: {}
+
+services:
+  validationService:
+    protocol: http
+    url: http://httpbin.org
+    path: /post
+    method: POST
+    timeout: 10000
+    retryCount: 2
+
+steps:
+  - name: ValidatePayment
+    description: Validate payment request (local only)
+    serviceId: validationService
+    inputMapping:
+      amount: $.amount
+      currency: $.currency
+    outputMapping:
+      validationId: $.headers.x-validation-id
+      validationResult: $.headers.x-validation-result
+    nextSteps:
+      - ProcessPayment
+    fallback: null
+    retry:
+      maxAttempts: 2
+      backoffMs: 1000
+
+  - name: ProcessPayment
+    description: Process validated payment
+    serviceId: validationService
+    inputMapping:
+      transactionId: $.validationId
+      amount: $.amount
+    outputMapping:
+      transactionStatus: $.headers.x-transaction-status
+      transactionId: $.headers.x-transaction-id
+    nextSteps: []
+    fallback: null
+    retry:
+      maxAttempts: 1
+      backoffMs: 500

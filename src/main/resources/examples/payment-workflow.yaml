@@ -1,0 +1,155 @@
+workflowName: payment-processing-workflow
+version: "1.0"
+
+# Define all microservices that can be called
+services:
+  validation-service:
+    name: validation-service
+    protocol: HTTP
+    url: http://validation-service:8081
+    path: /api/validate
+    method: POST
+    timeout: 5000
+    retries: 2
+    async: false
+    headers:
+      Content-Type: application/json
+      X-Service-ID: orchestration-engine
+
+  payment-service:
+    name: payment-service
+    protocol: GRPC
+    url: payment-service:50051
+    path: /payment.PaymentService/ProcessPayment
+    method: POST
+    timeout: 10000
+    retries: 3
+    async: false
+
+  notification-service:
+    name: notification-service
+    protocol: KAFKA
+    topic: payment-notifications
+    timeout: 3000
+    retries: 1
+    async: true
+    kafkaProperties:
+      kafka.bootstrap.servers: localhost:9092
+
+  settlement-service:
+    name: settlement-service
+    protocol: HTTP
+    url: http://settlement-service:8082
+    path: /api/settle
+    method: POST
+    timeout: 15000
+    retries: 2
+    async: false
+
+  audit-service:
+    name: audit-service
+    protocol: KAFKA
+    topic: audit-logs
+    timeout: 2000
+    retries: 1
+    async: true
+
+# Define workflow steps
+steps:
+  validate-payment:
+    id: validate-payment
+    serviceName: validation-service
+    inputMapping:
+      paymentAmount: amount
+      paymentCurrency: currency
+      customerId: customer_id
+    outputMapping:
+      validationResult: result
+      validationStatus: status
+    nextSteps:
+      - process-payment
+    timeout: 5000
+    async: false
+
+  process-payment:
+    id: process-payment
+    serviceName: payment-service
+    inputMapping:
+      amount: validationResult.amount
+      currency: validationResult.currency
+      orderId: order_id
+    outputMapping:
+      transactionId: transaction_id
+      paymentStatus: status
+    nextSteps:
+      - notify-customer
+      - settle-payment
+    parallel: true  # Execute next steps in parallel
+    timeout: 10000
+    fallback: payment-failed-handler
+    async: false
+
+  settle-payment:
+    id: settle-payment
+    serviceName: settlement-service
+    inputMapping:
+      transactionId: transactionId
+      amount: amount
+      settlementType: type
+    outputMapping:
+      settlementId: settlement_id
+    nextSteps:
+      - audit-settlement
+    timeout: 15000
+    async: false
+
+  notify-customer:
+    id: notify-customer
+    serviceName: notification-service
+    inputMapping:
+      customerId: customer_id
+      transactionId: transactionId
+      status: paymentStatus
+    outputMapping: {}
+    nextSteps: []
+    timeout: 3000
+    async: true
+
+  audit-settlement:
+    id: audit-settlement
+    serviceName: audit-service
+    inputMapping:
+      transactionId: transactionId
+      settlementId: settlementId
+      action: settlement
+    outputMapping: {}
+    nextSteps: []
+    timeout: 2000
+    async: true
+
+  payment-failed-handler:
+    id: payment-failed-handler
+    serviceName: notification-service
+    inputMapping:
+      customerId: customer_id
+      status: failed
+      reason: errorMessage
+    outputMapping: {}
+    nextSteps: []
+    timeout: 3000
+    async: true
+
+# Workflow configuration
+startStep: validate-payment
+globalTimeout: 60000  # 60 seconds total workflow timeout
+globalRetries: 1
+
+context:
+  workflowType: payment_processing
+  environment: production
+  version: v1
+
+errorHandler:
+  TIMEOUT: payment-failed-handler
+  VALIDATION_ERROR: payment-failed-handler
+  PAYMENT_FAILED: payment-failed-handler

@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: vyuh-engine
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      bootstrap-servers: localhost:9092
+      group-id: orchestration-engine
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  webflux:
+    base-path: /api
+
+# Aerospike Distributed State Store Configuration
+aerospike:
+  host: host.docker.internal
+  port: 3000
+  namespace: test  # Use default Aerospike namespace
+  execution:
+    ttl: 86400  # 24 hours default TTL for execution contexts
+
+# Vyuh Instance Configuration
+vyuh:
+  instance:
+    id: ${VYUH_INSTANCE_ID:${random.uuid}}
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    root: INFO
+    com.payments: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
