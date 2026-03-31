@@ -1,28 +1,22 @@
 package com.vyuh.orchestration.api;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.Map;
 
 /**
- * Request object for workflow execution
+ * Request object for workflow execution.
+ * The workflow is loaded in memory at startup, so only variables are required.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class WorkflowExecutionRequest {
-    private String configPath;
     private Map<String, Object> variables;
 
     public WorkflowExecutionRequest() {
     }
 
-    public WorkflowExecutionRequest(String configPath, Map<String, Object> variables) {
-        this.configPath = configPath;
+    public WorkflowExecutionRequest(Map<String, Object> variables) {
         this.variables = variables;
-    }
-
-    public String getConfigPath() {
-        return configPath;
-    }
-
-    public void setConfigPath(String configPath) {
-        this.configPath = configPath;
     }
 
     public Map<String, Object> getVariables() {

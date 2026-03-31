@@ -1,0 +1,96 @@
+workflowName: order-fulfillment-workflow
+version: "1.0"
+
+services:
+  order-service:
+    name: order-service
+    protocol: HTTP
+    url: http://order-service:8080
+    path: /api/orders/validate
+    method: POST
+    openapiSpec: openapi/order-service.yaml
+    operationId: validateOrder
+    timeout: 8000
+    retries: 2
+    async: false
+    headers:
+      Content-Type: application/json
+
+  inventory-service:
+    name: inventory-service
+    protocol: GRPC
+    url: inventory-service:50051
+    path: /inventory.InventoryService/CheckStock
+    protoFile: proto/inventory.proto
+    protoService: inventory.InventoryService
+    protoMethod: CheckStock
+    timeout: 10000
+    retries: 2
+    async: false
+
+  shipping-service:
+    name: shipping-service
+    protocol: KAFKA
+    topic: shipping-commands
+    timeout: 5000
+    retries: 1
+    async: true
+    kafkaProperties:
+      bootstrap.servers: localhost:9092
+
+steps:
+  validate-order:
+    id: validate-order
+    serviceName: order-service
+    inputMapping:
+      orderId: orderId
+      customerId: customerId
+      itemCode: itemCode
+      quantity: quantity
+    outputMapping:
+      validationStatus: status
+      validationMessage: message
+    nextSteps:
+      - check-stock
+    timeout: 8000
+    async: false
+
+  check-stock:
+    id: check-stock
+    serviceName: inventory-service
+    inputMapping:
+      itemCode: itemCode
+      quantity: quantity
+    outputMapping:
+      stockAvailable: available
+      reservedQuantity: reserved
+    nextSteps:
+      - dispatch-shipment
+    timeout: 10000
+    async: false
+
+  dispatch-shipment:
+    id: dispatch-shipment
+    serviceName: shipping-service
+    inputMapping:
+      orderId: orderId
+      itemCode: itemCode
+      quantity: quantity
+      validationStatus: validationStatus
+      stockAvailable: stockAvailable
+    outputMapping:
+      shipmentId: shipmentId
+    nextSteps: []
+    timeout: 5000
+    async: true
+
+startStep: validate-order
+globalTimeout: 120000
+globalRetries: 1
+
+context:
+  workflowType: order_fulfillment
+  environment: production
+
+errorHandler:
+  STOCK_UNAVAILABLE: validate-order

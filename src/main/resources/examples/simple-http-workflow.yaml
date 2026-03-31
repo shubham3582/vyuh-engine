@@ -1,45 +1,58 @@
-name: Simple HTTP Workflow
-serviceTimeout: 30000
-globalErrorHandler: null
-initialContext: {}
+workflowName: simple-http-workflow
+version: "1.0"
 
 services:
-  validationService:
-    protocol: http
+  validation-service:
+    name: validation-service
+    protocol: HTTP
     url: http://httpbin.org
     path: /post
     method: POST
+    openapiSpec: openapi/validation-service.yaml
+    operationId: validatePayment
     timeout: 10000
-    retryCount: 2
+    retries: 2
+    async: false
+    headers:
+      Content-Type: application/json
 
 steps:
-  - name: ValidatePayment
-    description: Validate payment request (local only)
-    serviceId: validationService
+  validate-payment:
+    id: validate-payment
+    serviceName: validation-service
     inputMapping:
-      amount: $.amount
-      currency: $.currency
+      amount: amount
+      currency: currency
+      customerId: customerId
     outputMapping:
-      validationId: $.headers.x-validation-id
-      validationResult: $.headers.x-validation-result
+      requestId: json.id
+      originalAmount: json.amount
     nextSteps:
-      - ProcessPayment
-    fallback: null
-    retry:
-      maxAttempts: 2
-      backoffMs: 1000
+      - process-payment
+    timeout: 10000
+    async: false
 
-  - name: ProcessPayment
-    description: Process validated payment
-    serviceId: validationService
+  process-payment:
+    id: process-payment
+    serviceName: validation-service
     inputMapping:
-      transactionId: $.validationId
-      amount: $.amount
+      requestId: requestId
+      amount: originalAmount
+      currency: currency
     outputMapping:
-      transactionStatus: $.headers.x-transaction-status
-      transactionId: $.headers.x-transaction-id
+      processedAmount: json.amount
+      processedCurrency: json.currency
     nextSteps: []
-    fallback: null
-    retry:
-      maxAttempts: 1
-      backoffMs: 500
+    timeout: 10000
+    async: false
+
+startStep: validate-payment
+globalTimeout: 60000
+globalRetries: 1
+
+context:
+  workflowType: simple_http
+  environment: demo
+
+errorHandler:
+  REQUEST_ERROR: validate-payment

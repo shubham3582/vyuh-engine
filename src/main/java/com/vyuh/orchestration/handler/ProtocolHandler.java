@@ -14,14 +14,14 @@ public interface ProtocolHandler {
     /**
      * Execute a service call synchronously
      */
-    ServiceCallResponse executeSync(String serviceName, String path, String method, 
+    ServiceCallResponse executeSync(String serviceName, String url, String path, String method, 
                                    Map<String, Object> payload, Map<String, String> headers,
                                    long timeout, ExecutionContext context);
     
     /**
      * Execute a service call asynchronously
      */
-    Mono<ServiceCallResponse> executeAsync(String serviceName, String path, String method,
+    Mono<ServiceCallResponse> executeAsync(String serviceName, String url, String path, String method,
                                           Map<String, Object> payload, Map<String, String> headers,
                                           long timeout, ExecutionContext context);
     

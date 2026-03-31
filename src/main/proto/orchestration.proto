@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package com.vyuh.orchestration.grpc;
+
+import "google/protobuf/struct.proto";
+
+option java_package = "com.vyuh.orchestration.grpc";
+option java_multiple_files = true;
+option java_outer_classname = "OrchestrationProto";
+
+message WorkflowExecutionRequest {
+  string config_path = 1;
+  google.protobuf.Struct variables = 2;
+}
+
+message WorkflowExecutionResponse {
+  string execution_id = 1;
+  string status = 2;
+  google.protobuf.Struct metadata = 3;
+}
+
+message ResumeExecutionRequest {
+  string execution_id = 1;
+}
+
+message ResumeExecutionResponse {
+  string execution_id = 1;
+  string status = 2;
+  google.protobuf.Struct metadata = 3;
+}
+
+service OrchestrationService {
+  rpc ExecuteWorkflow(WorkflowExecutionRequest) returns (WorkflowExecutionResponse);
+  rpc ResumeWorkflow(ResumeExecutionRequest) returns (ResumeExecutionResponse);
+}

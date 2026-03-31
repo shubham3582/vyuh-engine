@@ -64,32 +64,43 @@ public class ConfigurationLoader {
      */
     public OrchestrationConfig load(String filePath) throws IOException {
         String content;
-        
+        String normalizedPath = normalizePath(filePath);
+
         // Try loading from classpath first
         try {
-            Resource resource = new ClassPathResource(filePath);
+            Resource resource = new ClassPathResource(normalizedPath);
             if (resource.exists()) {
-                logger.info("Loading configuration from classpath: " + filePath);
+                logger.info("Loading configuration from classpath: " + normalizedPath);
                 content = Files.readString(resource.getFile().toPath());
             } else {
                 // Fall back to file system
-                logger.info("Loading configuration from file system: " + filePath);
-                Path path = Path.of(filePath);
+                logger.info("Loading configuration from file system: " + normalizedPath);
+                Path path = Path.of(normalizedPath);
                 content = Files.readString(path);
             }
         } catch (IOException e) {
-            logger.info("Failed to load from classpath, trying file system: " + filePath);
+            logger.info("Failed to load from classpath, trying file system: " + normalizedPath);
             // Fall back to file system
-            Path path = Path.of(filePath);
+            Path path = Path.of(normalizedPath);
             content = Files.readString(path);
         }
         
-        if (filePath.endsWith(".yaml") || filePath.endsWith(".yml")) {
+        if (normalizedPath.endsWith(".yaml") || normalizedPath.endsWith(".yml")) {
             return loadFromYamlString(content);
-        } else if (filePath.endsWith(".json")) {
+        } else if (normalizedPath.endsWith(".json")) {
             return loadFromJsonString(content);
         } else {
-            throw new IllegalArgumentException("Unsupported file format: " + filePath);
+            throw new IllegalArgumentException("Unsupported file format: " + normalizedPath);
         }
+    }
+
+    private String normalizePath(String filePath) {
+        if (filePath == null) {
+            return null;
+        }
+        if (filePath.startsWith("classpath:")) {
+            return filePath.substring("classpath:".length());
+        }
+        return filePath;
     }
 }

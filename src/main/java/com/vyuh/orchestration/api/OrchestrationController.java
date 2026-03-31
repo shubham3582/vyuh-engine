@@ -1,7 +1,7 @@
 package com.vyuh.orchestration.api;
 
-import com.vyuh.orchestration.config.ConfigurationLoader;
 import com.vyuh.orchestration.config.OrchestrationConfig;
+import com.vyuh.orchestration.config.WorkflowConfigHolder;
 import com.vyuh.orchestration.engine.OrchestrationEngine;
 import com.vyuh.orchestration.engine.WorkflowRecoveryService;
 import com.vyuh.orchestration.execution.ExecutionContext;
@@ -24,7 +24,7 @@ import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
- * REST API for orchestration engine with distributed state management
+ * REST API for orchestration engine with distributed state management.
  */
 @RestController
 @RequestMapping("/api/orchestration")
@@ -33,17 +33,17 @@ public class OrchestrationController {
     private static final Logger logger = Logger.getLogger(OrchestrationController.class.getName());
 
     private final OrchestrationEngine orchestrationEngine;
-    private final ConfigurationLoader configurationLoader;
+    private final WorkflowConfigHolder workflowConfigHolder;
     private final WorkflowRecoveryService recoveryService;
     private final DistributedStateStore stateStore;
 
     @Autowired
     public OrchestrationController(OrchestrationEngine orchestrationEngine,
-                                   ConfigurationLoader configurationLoader,
+                                   WorkflowConfigHolder workflowConfigHolder,
                                    WorkflowRecoveryService recoveryService,
                                    DistributedStateStore stateStore) {
         this.orchestrationEngine = orchestrationEngine;
-        this.configurationLoader = configurationLoader;
+        this.workflowConfigHolder = workflowConfigHolder;
         this.recoveryService = recoveryService;
         this.stateStore = stateStore;
     }
@@ -55,17 +55,14 @@ public class OrchestrationController {
     public ResponseEntity<ExecutionContext> executeSyncWorkflow(
             @RequestBody WorkflowExecutionRequest request) {
         try {
-            if (request == null || request.getConfigPath() == null || request.getConfigPath().isEmpty()) {
-                logger.severe("Missing configPath in request");
+            if (request == null) {
+                logger.severe("Missing workflow execution request");
                 return ResponseEntity.badRequest().build();
             }
-            
-            OrchestrationConfig config = configurationLoader.load(request.getConfigPath());
+
+            OrchestrationConfig config = workflowConfigHolder.getWorkflowConfig();
             ExecutionContext context = orchestrationEngine.executeSync(config, request.getVariables());
             return ResponseEntity.ok(context);
-        } catch (IOException e) {
-            logger.severe("Failed to load configuration: " + e.getMessage());
-            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             logger.severe("Workflow execution failed: " + e.getMessage());
             return ResponseEntity.internalServerError().build();
@@ -79,21 +76,21 @@ public class OrchestrationController {
     public Mono<ResponseEntity<ExecutionContext>> executeAsyncWorkflow(
             @RequestBody WorkflowExecutionRequest request) {
         try {
-            if (request == null || request.getConfigPath() == null || request.getConfigPath().isEmpty()) {
-                logger.severe("Missing configPath in request");
+            if (request == null) {
+                logger.severe("Missing workflow execution request");
                 return Mono.just(ResponseEntity.badRequest().build());
             }
-            
-            OrchestrationConfig config = configurationLoader.load(request.getConfigPath());
+
+            OrchestrationConfig config = workflowConfigHolder.getWorkflowConfig();
             return orchestrationEngine.executeAsync(config, request.getVariables())
                     .map(ResponseEntity::ok)
                     .onErrorResume(e -> {
                         logger.severe("Workflow execution failed: " + e.getMessage());
                         return Mono.just(ResponseEntity.internalServerError().build());
                     });
-        } catch (IOException e) {
-            logger.severe("Failed to load configuration: " + e.getMessage());
-            return Mono.just(ResponseEntity.badRequest().build());
+        } catch (Exception e) {
+            logger.severe("Workflow execution failed: " + e.getMessage());
+            return Mono.just(ResponseEntity.internalServerError().build());
         }
     }
     

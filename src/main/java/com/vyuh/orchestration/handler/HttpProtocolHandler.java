@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 /**
- * HTTP protocol handler for REST API calls
+ * HTTP protocol handler for REST API calls.
  */
 @Component
 public class HttpProtocolHandler implements ProtocolHandler {
@@ -32,16 +32,16 @@ public class HttpProtocolHandler implements ProtocolHandler {
     }
     
     @Override
-    public ServiceCallResponse executeSync(String serviceName, String path, String method,
+    public ServiceCallResponse executeSync(String serviceName, String url, String path, String method,
                                           Map<String, Object> payload, Map<String, String> headers,
                                           long timeout, ExecutionContext context) {
         long startTime = System.currentTimeMillis();
         try {
-            String url = buildUrl(serviceName, path);
+            String endpoint = buildUrl(serviceName, url, path);
             
-            logger.info("Executing HTTP " + method + " request to " + url + " for service " + serviceName);
+            logger.info("Executing HTTP " + method + " request to " + endpoint + " for service " + serviceName);
             
-            Map<String, Object> response = executeHttpRequest(url, method, payload, headers, timeout);
+            Map<String, Object> response = executeHttpRequest(endpoint, method, payload, headers, timeout);
             
             long executionTime = System.currentTimeMillis() - startTime;
             return ServiceCallResponse.success(serviceName, response, executionTime);
@@ -54,16 +54,16 @@ public class HttpProtocolHandler implements ProtocolHandler {
     }
     
     @Override
-    public Mono<ServiceCallResponse> executeAsync(String serviceName, String path, String method,
+    public Mono<ServiceCallResponse> executeAsync(String serviceName, String url, String path, String method,
                                                   Map<String, Object> payload, Map<String, String> headers,
                                                   long timeout, ExecutionContext context) {
         long startTime = System.currentTimeMillis();
-        String url = buildUrl(serviceName, path);
+        String endpoint = buildUrl(serviceName, url, path);
         
-        logger.info("Executing async HTTP " + method + " request to " + url + " for service " + serviceName);
+        logger.info("Executing async HTTP " + method + " request to " + endpoint + " for service " + serviceName);
         
         return webClient.method(org.springframework.http.HttpMethod.valueOf(method.toUpperCase()))
-                .uri(url)
+                .uri(endpoint)
                 .bodyValue(payload)
                 .headers(httpHeaders -> {
                     if (headers != null) {
@@ -93,8 +93,17 @@ public class HttpProtocolHandler implements ProtocolHandler {
         return "HTTP";
     }
     
-    private String buildUrl(String serviceName, String path) {
-        return String.format("http://%s%s", serviceName, path);
+    private String buildUrl(String serviceName, String baseUrl, String path) {
+        String effectiveBase = baseUrl;
+        if (effectiveBase == null || effectiveBase.isBlank()) {
+            effectiveBase = "http://" + serviceName;
+        }
+        String normalizedBase = effectiveBase.endsWith("/") ? effectiveBase.substring(0, effectiveBase.length() - 1) : effectiveBase;
+        if (path == null || path.isBlank()) {
+            return normalizedBase;
+        }
+        String normalizedPath = path.startsWith("/") ? path : "/" + path;
+        return normalizedBase + normalizedPath;
     }
     
     private Map<String, Object> executeHttpRequest(String url, String method, 

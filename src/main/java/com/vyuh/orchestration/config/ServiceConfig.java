@@ -42,6 +42,21 @@ public class ServiceConfig {
     @JsonProperty("kafkaProperties")
     private Map<String, String> kafkaProperties;
 
+    @JsonProperty("openapiSpec")
+    private String openapiSpec;
+
+    @JsonProperty("operationId")
+    private String operationId;
+
+    @JsonProperty("protoFile")
+    private String protoFile;
+
+    @JsonProperty("protoService")
+    private String protoService;
+
+    @JsonProperty("protoMethod")
+    private String protoMethod;
+
     // Constructors
     public ServiceConfig() {}
 
@@ -95,5 +110,20 @@ public class ServiceConfig {
 
     public Map<String, String> getKafkaProperties() { return kafkaProperties; }
     public void setKafkaProperties(Map<String, String> kafkaProperties) { this.kafkaProperties = kafkaProperties; }
+
+    public String getOpenapiSpec() { return openapiSpec; }
+    public void setOpenapiSpec(String openapiSpec) { this.openapiSpec = openapiSpec; }
+
+    public String getOperationId() { return operationId; }
+    public void setOperationId(String operationId) { this.operationId = operationId; }
+
+    public String getProtoFile() { return protoFile; }
+    public void setProtoFile(String protoFile) { this.protoFile = protoFile; }
+
+    public String getProtoService() { return protoService; }
+    public void setProtoService(String protoService) { this.protoService = protoService; }
+
+    public String getProtoMethod() { return protoMethod; }
+    public void setProtoMethod(String protoMethod) { this.protoMethod = protoMethod; }
 }
 

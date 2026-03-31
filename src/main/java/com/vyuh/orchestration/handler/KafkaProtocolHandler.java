@@ -40,7 +40,7 @@ public class KafkaProtocolHandler implements ProtocolHandler {
     }
     
     @Override
-    public ServiceCallResponse executeSync(String serviceName, String path, String method,
+    public ServiceCallResponse executeSync(String serviceName, String url, String path, String method,
                                           Map<String, Object> payload, Map<String, String> headers,
                                           long timeout, ExecutionContext context) {
         long startTime = System.currentTimeMillis();
@@ -76,7 +76,7 @@ public class KafkaProtocolHandler implements ProtocolHandler {
     }
     
     @Override
-    public Mono<ServiceCallResponse> executeAsync(String serviceName, String path, String method,
+    public Mono<ServiceCallResponse> executeAsync(String serviceName, String url, String path, String method,
                                                   Map<String, Object> payload, Map<String, String> headers,
                                                   long timeout, ExecutionContext context) {
         long startTime = System.currentTimeMillis();

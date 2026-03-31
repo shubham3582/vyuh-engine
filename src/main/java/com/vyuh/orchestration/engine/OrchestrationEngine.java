@@ -217,7 +217,7 @@ public class OrchestrationEngine {
                     "Unsupported protocol: " + serviceConfig.getProtocol(), 0);
         }
         
-        return handler.executeSync(step.getServiceName(), serviceConfig.getPath(), 
+        return handler.executeSync(step.getServiceName(), serviceConfig.getUrl(), serviceConfig.getPath(), 
                 serviceConfig.getMethod(), payload, serviceConfig.getHeaders(), timeout, context);
     }
     
@@ -239,7 +239,7 @@ public class OrchestrationEngine {
                     "Unsupported protocol: " + serviceConfig.getProtocol(), 0));
         }
         
-        return handler.executeAsync(step.getServiceName(), serviceConfig.getPath(),
+        return handler.executeAsync(step.getServiceName(), serviceConfig.getUrl(), serviceConfig.getPath(),
                 serviceConfig.getMethod(), payload, serviceConfig.getHeaders(), timeout, context);
     }
     

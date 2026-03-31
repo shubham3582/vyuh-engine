@@ -26,6 +26,8 @@ aerospike:
 vyuh:
   instance:
     id: ${VYUH_INSTANCE_ID:${random.uuid}}
+  workflow:
+    config-path: examples/payment-workflow.yaml
 
 server:
   port: 8080

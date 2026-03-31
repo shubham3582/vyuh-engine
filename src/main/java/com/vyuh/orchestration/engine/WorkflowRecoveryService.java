@@ -1,7 +1,7 @@
 package com.vyuh.orchestration.engine;
 
-import com.vyuh.orchestration.config.ConfigurationLoader;
 import com.vyuh.orchestration.config.OrchestrationConfig;
+import com.vyuh.orchestration.config.WorkflowConfigHolder;
 import com.vyuh.orchestration.execution.ExecutionContext;
 import com.vyuh.orchestration.execution.ExecutionStatus;
 import com.vyuh.orchestration.state.DistributedStateStore;
@@ -25,15 +25,15 @@ public class WorkflowRecoveryService {
 
     private final DistributedStateStore stateStore;
     private final OrchestrationEngine orchestrationEngine;
-    private final ConfigurationLoader configurationLoader;
+    private final WorkflowConfigHolder workflowConfigHolder;
 
     @Autowired
     public WorkflowRecoveryService(DistributedStateStore stateStore,
                                   OrchestrationEngine orchestrationEngine,
-                                  ConfigurationLoader configurationLoader) {
+                                  WorkflowConfigHolder workflowConfigHolder) {
         this.stateStore = stateStore;
         this.orchestrationEngine = orchestrationEngine;
-        this.configurationLoader = configurationLoader;
+        this.workflowConfigHolder = workflowConfigHolder;
     }
 
     /**
@@ -58,8 +58,7 @@ public class WorkflowRecoveryService {
         }
 
         try {
-            // Load workflow configuration
-            // Note: In production, you'd want to store config with execution or have a config registry
+            // Load workflow configuration from the single in-memory workflow holder
             OrchestrationConfig config = loadWorkflowConfig(context.getWorkflowName());
             if (config == null) {
                 logger.error("Could not load workflow config for: {}", context.getWorkflowName());
@@ -145,9 +144,10 @@ public class WorkflowRecoveryService {
      * In production, this would be a config registry service
      */
     private OrchestrationConfig loadWorkflowConfig(String workflowName) {
-        // This is a placeholder - you'd need a way to map workflow names to configs
-        // Perhaps store config hash/id with execution context
-        logger.warn("Workflow config loading not implemented for: {}", workflowName);
+        if (workflowConfigHolder.getWorkflowName().equals(workflowName)) {
+            return workflowConfigHolder.getWorkflowConfig();
+        }
+        logger.error("Requested workflow name does not match loaded workflow: {}", workflowName);
         return null;
     }
 

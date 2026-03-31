@@ -9,6 +9,8 @@ services:
     url: http://validation-service:8081
     path: /api/validate
     method: POST
+    openapiSpec: openapi/validation-service.yaml
+    operationId: validatePayment
     timeout: 5000
     retries: 2
     async: false
@@ -21,6 +23,9 @@ services:
     protocol: GRPC
     url: payment-service:50051
     path: /payment.PaymentService/ProcessPayment
+    protoFile: proto/payment-service.proto
+    protoService: payment.PaymentService
+    protoMethod: ProcessPayment
     method: POST
     timeout: 10000
     retries: 3
@@ -42,6 +47,8 @@ services:
     url: http://settlement-service:8082
     path: /api/settle
     method: POST
+    openapiSpec: openapi/settlement-service.yaml
+    operationId: settlePayment
     timeout: 15000
     retries: 2
     async: false

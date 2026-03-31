@@ -9,7 +9,8 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 /**
- * gRPC protocol handler for high-performance RPC calls
+ * gRPC protocol handler for high-performance RPC calls.
+ * Contract definitions are published in src/main/proto/orchestration.proto.
  */
 @Component
 public class GrpcProtocolHandler implements ProtocolHandler {
@@ -17,12 +18,12 @@ public class GrpcProtocolHandler implements ProtocolHandler {
     private static final Logger logger = Logger.getLogger(GrpcProtocolHandler.class.getName());
     
     @Override
-    public ServiceCallResponse executeSync(String serviceName, String path, String method,
+    public ServiceCallResponse executeSync(String serviceName, String url, String path, String method,
                                           Map<String, Object> payload, Map<String, String> headers,
                                           long timeout, ExecutionContext context) {
         long startTime = System.currentTimeMillis();
         try {
-            String target = resolveTarget(serviceName);
+            String target = resolveTarget(serviceName, url);
             
             logger.info("Executing gRPC call to " + target + " for service " + serviceName + " method " + method);
             
@@ -39,12 +40,12 @@ public class GrpcProtocolHandler implements ProtocolHandler {
     }
     
     @Override
-    public Mono<ServiceCallResponse> executeAsync(String serviceName, String path, String method,
+    public Mono<ServiceCallResponse> executeAsync(String serviceName, String url, String path, String method,
                                                   Map<String, Object> payload, Map<String, String> headers,
                                                   long timeout, ExecutionContext context) {
         long startTime = System.currentTimeMillis();
         return Mono.fromCallable(() -> {
-            String target = resolveTarget(serviceName);
+            String target = resolveTarget(serviceName, url);
             
             logger.info("Executing async gRPC call to " + target + " for service " + serviceName + " method " + method);
             
@@ -71,8 +72,11 @@ public class GrpcProtocolHandler implements ProtocolHandler {
         return "GRPC";
     }
     
-    private String resolveTarget(String serviceName) {
-        return serviceName + ":50051";
+    private String resolveTarget(String serviceName, String targetUrl) {
+        if (targetUrl == null || targetUrl.isBlank()) {
+            return serviceName + ":50051";
+        }
+        return targetUrl;
     }
     
     private Map<String, Object> executeGrpcCall(String target, String method,
